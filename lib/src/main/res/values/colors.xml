@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="irdcs_camera_background">#992F3542</color>
+    <color name="irdcs_corner_color">#4CD964</color>
+    <color name="irdcs_white_background">#ffffffff</color>
+    <color name="irdcs_gray">#88888888</color>
+</resources>

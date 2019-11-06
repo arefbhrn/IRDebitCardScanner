@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">IR Debit Card Scanner</string>
+    <string name="scan_card_debug">Scan Card (Debug)</string>
+    <string name="scan_card_alt_text">Scan Card (Alt Text)</string>
+</resources>

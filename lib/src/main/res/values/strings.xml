@@ -1,0 +1,9 @@
+<resources>
+    <string name="scan_card">اسکن کارت بانکی</string>
+    <string name="position_card">کارت خود را درون این کادر قرار دهید</string>
+    <string name="deny_permission_title">نیاز به مجوز دسترسی به دوربین</string>
+    <string name="deny_permission_message">برای اسکن کارت نیاز است مجوز دسترسی به دوربین را تأیید کنید.</string>
+    <string name="deny_permission_button">تأیید</string>
+    <string name="busy_camera_title">امکان استفاده از دوربین وجود ندارد</string>
+    <string name="busy_camera">برنامه دیگری در حال استفاده از دوربین است.</string>
+</resources>
