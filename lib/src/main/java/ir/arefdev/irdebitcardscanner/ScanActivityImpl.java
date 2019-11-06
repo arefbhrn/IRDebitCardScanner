@@ -32,7 +32,7 @@ public class ScanActivityImpl extends ScanBaseActivity {
 
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_scan_card);
+		setContentView(R.layout.irdcs_activity_scan_card);
 
 		String scanCardText = getIntent().getStringExtra(SCAN_CARD_TEXT);
 		if (!TextUtils.isEmpty(scanCardText)) {
