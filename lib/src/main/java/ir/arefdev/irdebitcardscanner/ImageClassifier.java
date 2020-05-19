@@ -20,7 +20,6 @@ import android.graphics.Bitmap;
 import android.util.Log;
 
 import org.tensorflow.lite.Interpreter;
-import org.tensorflow.lite.gpu.GpuDelegate;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -72,7 +71,7 @@ abstract class ImageClassifier {
 	/**
 	 * holds a gpu delegate
 	 */
-	private GpuDelegate gpuDelegate = null;
+//	private GpuDelegate gpuDelegate = null;
 
 	/**
 	 * Initializes an {@code ImageClassifier}.
@@ -119,11 +118,11 @@ abstract class ImageClassifier {
 	}
 
 	public void useGpu() {
-		if (gpuDelegate == null) {
-			gpuDelegate = new GpuDelegate();
-			tfliteOptions.addDelegate(gpuDelegate);
-			recreateInterpreter();
-		}
+//		if (gpuDelegate == null) {
+//			gpuDelegate = new GpuDelegate();
+//			tfliteOptions.addDelegate(gpuDelegate);
+//			recreateInterpreter();
+//		}
 	}
 
 	public void useNNAPI() {
@@ -142,10 +141,10 @@ abstract class ImageClassifier {
 	public void close() {
 		tflite.close();
 		tflite = null;
-		if (gpuDelegate != null) {
-			gpuDelegate.close();
-			gpuDelegate = null;
-		}
+//		if (gpuDelegate != null) {
+//			gpuDelegate.close();
+//			gpuDelegate = null;
+//		}
 		tfliteModel = null;
 	}
 
