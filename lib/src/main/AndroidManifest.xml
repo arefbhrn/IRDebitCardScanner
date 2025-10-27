@@ -10,7 +10,7 @@
 
     <application>
         <activity
-            android:name="ir.arefdev.irdebitcardscanner.ScanActivityImpl"
+            android:name=".ScanActivityImpl"
             android:configChanges="orientation"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar.FullScreen" />

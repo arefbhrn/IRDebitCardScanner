@@ -15,7 +15,9 @@
         android:theme="@style/AppTheme"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name="ir.arefdev.irdebitcardscanner.example.ResultActivity" />
-        <activity android:name="ir.arefdev.irdebitcardscanner.example.LaunchActivity">
+        <activity
+            android:name="ir.arefdev.irdebitcardscanner.example.LaunchActivity"
+            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
