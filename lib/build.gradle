@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'org.jetbrains.kotlin.android'
 apply plugin: 'maven-publish'
 
 group = 'com.arefbhrn.libraries'
@@ -42,10 +43,12 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation 'androidx.appcompat:appcompat:1.7.1'
-    implementation 'androidx.constraintlayout:constraintlayout:2.2.1'
-    implementation 'org.tensorflow:tensorflow-lite:2.17.0'
-//    implementation 'org.tensorflow:tensorflow-lite-gpu:2.6.0'
+    implementation libs.androidx.appcompat
+    implementation libs.androidx.constraintlayout
+    implementation(platform(libs.kotlin.bom))
+    implementation(libs.bundles.coroutines)
+    implementation libs.tensorflow.lite
+//    implementation libs.tensorflow.lite.gpu
 }
 
 publishing {
