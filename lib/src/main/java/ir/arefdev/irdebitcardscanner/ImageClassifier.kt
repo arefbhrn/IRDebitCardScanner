@@ -13,194 +13,118 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.util.Log;
-
-import org.tensorflow.lite.Interpreter;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.MappedByteBuffer;
+import android.content.Context
+import android.graphics.Bitmap
+import android.util.Log
+import androidx.core.graphics.scale
+import org.tensorflow.lite.Interpreter
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.nio.MappedByteBuffer
 
 /**
  * Classifies images with Tensorflow Lite.
  */
-abstract class ImageClassifier {
+@Suppress("LeakingThis")
+abstract class ImageClassifier @Throws(IOException::class) constructor(context: Context) {
 
-	/**
-	 * Tag for the {@link Log}.
-	 */
-	private static final String TAG = "CardScan";
+    companion object {
+        private const val TAG = "CardScan"
+        private const val DIM_BATCH_SIZE = 1
+        private const val DIM_PIXEL_SIZE = 3
+    }
 
-	/**
-	 * Dimensions of inputs.
-	 */
-	private static final int DIM_BATCH_SIZE = 1;
+    private val intValues = IntArray(getImageSizeX() * getImageSizeY())
+    private val tfliteOptions = Interpreter.Options()
+    private var tfliteModel: MappedByteBuffer? = null
+    protected lateinit var tflite: Interpreter
+    protected var imgData: ByteBuffer? = null
 
-	private static final int DIM_PIXEL_SIZE = 3;
+    init {
+        initModel(context)
+    }
 
-	/**
-	 * Preallocated buffers for storing image data in.
-	 */
-	private int[] intValues = new int[getImageSizeX() * getImageSizeY()];
+    @Throws(IOException::class)
+    private fun initModel(context: Context) {
+        tfliteModel = loadModelFile(context)
+        tflite = Interpreter(tfliteModel!!, tfliteOptions)
+        imgData = ByteBuffer.allocateDirect(
+            DIM_BATCH_SIZE
+                    * getImageSizeX()
+                    * getImageSizeY()
+                    * DIM_PIXEL_SIZE
+                    * getNumBytesPerChannel()
+        )
+        imgData!!.order(ByteOrder.nativeOrder())
+    }
 
-	/**
-	 * Options for configuring the Interpreter.
-	 */
-	private final Interpreter.Options tfliteOptions = new Interpreter.Options();
+    fun classifyFrame(bitmap: Bitmap) {
+        if (!::tflite.isInitialized) {
+            Log.e(TAG, "Image classifier has not been initialized; Skipped.")
+        }
+        convertBitmapToByteBuffer(bitmap)
+        runInference()
+    }
 
-	/**
-	 * The loaded TensorFlow Lite model.
-	 */
-	private MappedByteBuffer tfliteModel;
+    private fun recreateInterpreter() {
+        if (::tflite.isInitialized) {
+            tflite.close()
+            tflite = Interpreter(tfliteModel!!, tfliteOptions)
+        }
+    }
 
-	/**
-	 * An instance of the driver class to run model inference with Tensorflow Lite.
-	 */
-	Interpreter tflite;
+    fun useCPU() {
+        tfliteOptions.setUseNNAPI(false)
+        recreateInterpreter()
+    }
 
-	/**
-	 * A ByteBuffer to hold image data, to be feed into Tensorflow Lite as inputs.
-	 */
-	ByteBuffer imgData = null;
+    fun useGpu() {
+        // GPU delegate disabled
+    }
 
-	/**
-	 * holds a gpu delegate
-	 */
-//	private GpuDelegate gpuDelegate = null;
+    fun useNNAPI() {
+        tfliteOptions.setUseNNAPI(true)
+        recreateInterpreter()
+    }
 
-	/**
-	 * Initializes an {@code ImageClassifier}.
-	 */
-	ImageClassifier(Context context) throws IOException {
-		init(context);
-	}
+    fun setNumThreads(numThreads: Int) {
+        tfliteOptions.setNumThreads(numThreads)
+        recreateInterpreter()
+    }
 
-	private void init(Context context) throws IOException {
-		tfliteModel = loadModelFile(context);
-		tflite = new Interpreter(tfliteModel, tfliteOptions);
-		imgData =
-				ByteBuffer.allocateDirect(
-						DIM_BATCH_SIZE
-								* getImageSizeX()
-								* getImageSizeY()
-								* DIM_PIXEL_SIZE
-								* getNumBytesPerChannel());
-		imgData.order(ByteOrder.nativeOrder());
-	}
+    fun close() {
+        tflite.close()
+        tfliteModel = null
+    }
 
-	/**
-	 * Classifies a frame from the preview stream.
-	 */
-	void classifyFrame(Bitmap bitmap) {
-		if (tflite == null) {
-			Log.e(TAG, "Image classifier has not been initialized; Skipped.");
-		}
-		convertBitmapToByteBuffer(bitmap);
-		// Here's where the magic happens!!!
-		runInference();
-	}
+    @Throws(IOException::class)
+    abstract fun loadModelFile(context: Context): MappedByteBuffer
 
-	private void recreateInterpreter() {
-		if (tflite != null) {
-			tflite.close();
-			tflite = new Interpreter(tfliteModel, tfliteOptions);
-		}
-	}
+    private fun convertBitmapToByteBuffer(bitmap: Bitmap) {
+        if (imgData == null) return
+        imgData!!.rewind()
 
-	public void useCPU() {
-		tfliteOptions.setUseNNAPI(false);
-		recreateInterpreter();
-	}
+        val resizedBitmap = bitmap.scale(getImageSizeX(), getImageSizeY(), false)
+        resizedBitmap.getPixels(intValues, 0, resizedBitmap.width, 0, 0, resizedBitmap.width, resizedBitmap.height)
+        var pixel = 0
+        for (i in 0 until getImageSizeX()) {
+            for (j in 0 until getImageSizeY()) {
+                val v = intValues[pixel++]
+                addPixelValue(v)
+            }
+        }
+    }
 
-	public void useGpu() {
-//		if (gpuDelegate == null) {
-//			gpuDelegate = new GpuDelegate();
-//			tfliteOptions.addDelegate(gpuDelegate);
-//			recreateInterpreter();
-//		}
-	}
+    protected abstract fun getImageSizeX(): Int
 
-	public void useNNAPI() {
-		tfliteOptions.setUseNNAPI(true);
-		recreateInterpreter();
-	}
+    protected abstract fun getImageSizeY(): Int
 
-	public void setNumThreads(int numThreads) {
-		tfliteOptions.setNumThreads(numThreads);
-		recreateInterpreter();
-	}
+    protected abstract fun getNumBytesPerChannel(): Int
 
-	/**
-	 * Closes tflite to release resources.
-	 */
-	public void close() {
-		tflite.close();
-		tflite = null;
-//		if (gpuDelegate != null) {
-//			gpuDelegate.close();
-//			gpuDelegate = null;
-//		}
-		tfliteModel = null;
-	}
+    protected abstract fun addPixelValue(pixelValue: Int)
 
-	/**
-	 * Memory-map the model file in Assets.
-	 */
-	abstract MappedByteBuffer loadModelFile(Context context) throws IOException;
-
-	/**
-	 * Writes Image data into a {@code ByteBuffer}.
-	 */
-	private void convertBitmapToByteBuffer(Bitmap bitmap) {
-		if (imgData == null) {
-			return;
-		}
-		imgData.rewind();
-
-		Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, getImageSizeX(), getImageSizeY(), false);
-		resizedBitmap.getPixels(intValues, 0, resizedBitmap.getWidth(), 0, 0,
-				resizedBitmap.getWidth(), resizedBitmap.getHeight());
-		// Convert the image to floating point.
-		int pixel = 0;
-		for (int i = 0; i < getImageSizeX(); ++i) {
-			for (int j = 0; j < getImageSizeY(); ++j) {
-				final int val = intValues[pixel++];
-				addPixelValue(val);
-			}
-		}
-	}
-
-	/**
-	 * Get the image size along the x axis.
-	 */
-	protected abstract int getImageSizeX();
-
-	/**
-	 * Get the image size along the y axis.
-	 */
-	protected abstract int getImageSizeY();
-
-	/**
-	 * Get the number of bytes that is used to store a single color channel value.
-	 */
-	protected abstract int getNumBytesPerChannel();
-
-	/**
-	 * Add pixelValue to byteBuffer.
-	 */
-	protected abstract void addPixelValue(int pixelValue);
-
-	/**
-	 * Run inference using the prepared input in {@link #imgData}. Afterwards, the result will be
-	 * provided by getProbability().
-	 *
-	 * <p>This additional method is necessary, because we don't have a common base for different
-	 * primitive data types.
-	 */
-	protected abstract void runInference();
+    protected abstract fun runInference()
 }

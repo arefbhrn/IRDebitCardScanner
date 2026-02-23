@@ -1,14 +1,16 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.graphics.Bitmap;
-
-import java.util.List;
+import android.graphics.Bitmap
 
 interface OnScanListener {
 
-	void onPrediction(final String number, final Expiry expiry, final Bitmap bitmap,
-					  final List<DetectedBox> digitBoxes, final DetectedBox expiryBox);
+    fun onPrediction(
+        number: String?,
+        expiry: Expiry?,
+        bitmap: Bitmap,
+        digitBoxes: List<DetectedBox>,
+        expiryBox: DetectedBox?
+    )
 
-	void onFatalError();
-
+    fun onFatalError()
 }

@@ -1,12 +1,3 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-class CGSize {
-
-	final float width;
-	final float height;
-
-	CGSize(float width, float height) {
-		this.width = width;
-		this.height = height;
-	}
-}
+class CGSize(val width: Float, val height: Float)

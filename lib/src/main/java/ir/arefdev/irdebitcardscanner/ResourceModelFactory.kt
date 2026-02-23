@@ -1,44 +1,33 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.content.Context;
-import android.content.res.AssetFileDescriptor;
+import android.content.Context
+import android.content.res.AssetFileDescriptor
+import com.arefbhrn.irdebitcardscanner.R
+import java.io.FileInputStream
+import java.io.IOException
+import java.nio.MappedByteBuffer
+import java.nio.channels.FileChannel
 
-import com.arefbhrn.irdebitcardscanner.R;
+internal object ResourceModelFactory {
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
+    @Throws(IOException::class)
+    fun loadFindFourFile(context: Context): MappedByteBuffer =
+        loadModelFromResource(context, R.raw.findfour)
 
-class ResourceModelFactory {
+    @Throws(IOException::class)
+    fun loadRecognizeDigitsFile(context: Context): MappedByteBuffer =
+        loadModelFromResource(context, R.raw.fourrecognize)
 
-	private static ResourceModelFactory instance;
-
-	static ResourceModelFactory getInstance() {
-		if (instance == null) {
-			instance = new ResourceModelFactory();
-		}
-
-		return instance;
-	}
-
-	MappedByteBuffer loadFindFourFile(Context context) throws IOException {
-		return loadModelFromResource(context, R.raw.findfour);
-	}
-
-	MappedByteBuffer loadRecognizeDigitsFile(Context context) throws IOException {
-		return loadModelFromResource(context, R.raw.fourrecognize);
-	}
-
-	private MappedByteBuffer loadModelFromResource(Context context, int resource) throws IOException {
-		AssetFileDescriptor fileDescriptor = context.getResources().openRawResourceFd(resource);
-		FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
-		FileChannel fileChannel = inputStream.getChannel();
-		long startOffset = fileDescriptor.getStartOffset();
-		long declaredLength = fileDescriptor.getDeclaredLength();
-		MappedByteBuffer result = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
-		inputStream.close();
-		fileDescriptor.close();
-		return result;
-	}
+    @Throws(IOException::class)
+    private fun loadModelFromResource(context: Context, resource: Int): MappedByteBuffer {
+        val fileDescriptor: AssetFileDescriptor = context.resources.openRawResourceFd(resource)
+        val inputStream = FileInputStream(fileDescriptor.fileDescriptor)
+        val fileChannel: FileChannel = inputStream.channel
+        val startOffset = fileDescriptor.startOffset
+        val declaredLength = fileDescriptor.declaredLength
+        val result = fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength)
+        inputStream.close()
+        fileDescriptor.close()
+        return result
+    }
 }

@@ -1,338 +1,369 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Matrix;
-import android.graphics.Paint;
-import android.os.Handler;
-import android.os.Looper;
-import android.renderscript.Allocation;
-import android.renderscript.Element;
-import android.renderscript.RenderScript;
-import android.renderscript.ScriptIntrinsicYuvToRGB;
-import android.renderscript.Type;
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.os.Handler
+import android.os.Looper
+import android.renderscript.Allocation
+import android.renderscript.Element
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicYuvToRGB
+import android.renderscript.Type
+import androidx.core.graphics.createBitmap
+import java.io.File
+import java.util.LinkedList
 
-import java.io.File;
-import java.util.LinkedList;
+@Suppress("DEPRECATION")
+class MachineLearningThread : Runnable {
 
-class MachineLearningThread implements Runnable {
+    class RunArguments {
 
-	class RunArguments {
+        val mFrameBytes: ByteArray?
+        val mBitmap: Bitmap?
+        val mScanListener: OnScanListener?
+        val mObjectListener: OnObjectListener?
+        val mContext: Context
+        val mWidth: Int
+        val mHeight: Int
+        val mFormat: Int
+        val mSensorOrientation: Int
+        val mRoiCenterYRatio: Float
+        val mIsOcr: Boolean
+        val mObjectDetectFile: File?
 
-		private final byte[] mFrameBytes;
-		private final Bitmap mBitmap;
-		private final OnScanListener mScanListener;
-		private final OnObjectListener mObjectListener;
-		private final Context mContext;
-		private final int mWidth;
-		private final int mHeight;
-		private final int mFormat;
-		private final int mSensorOrientation;
-		private final float mRoiCenterYRatio;
-		private final boolean mIsOcr;
-		private final File mObjectDetectFile;
+        constructor(
+            frameBytes: ByteArray?,
+            width: Int,
+            height: Int,
+            format: Int,
+            sensorOrientation: Int,
+            scanListener: OnScanListener?,
+            context: Context,
+            roiCenterYRatio: Float
+        ) {
+            mFrameBytes = frameBytes
+            mBitmap = null
+            mWidth = width
+            mHeight = height
+            mFormat = format
+            mScanListener = scanListener
+            mContext = context
+            mSensorOrientation = sensorOrientation
+            mRoiCenterYRatio = roiCenterYRatio
+            mIsOcr = true
+            mObjectListener = null
+            mObjectDetectFile = null
+        }
 
-		RunArguments(byte[] frameBytes, int width, int height, int format,
-					 int sensorOrientation, OnScanListener scanListener, Context context,
-					 float roiCenterYRatio) {
-			mFrameBytes = frameBytes;
-			mBitmap = null;
-			mWidth = width;
-			mHeight = height;
-			mFormat = format;
-			mScanListener = scanListener;
-			mContext = context;
-			mSensorOrientation = sensorOrientation;
-			mRoiCenterYRatio = roiCenterYRatio;
-			mIsOcr = true;
-			mObjectListener = null;
-			mObjectDetectFile = null;
-		}
+        constructor(
+            frameBytes: ByteArray?,
+            width: Int,
+            height: Int,
+            format: Int,
+            sensorOrientation: Int,
+            objectListener: OnObjectListener?,
+            context: Context,
+            roiCenterYRatio: Float,
+            objectDetectFile: File?
+        ) {
+            mFrameBytes = frameBytes
+            mBitmap = null
+            mWidth = width
+            mHeight = height
+            mFormat = format
+            mScanListener = null
+            mContext = context
+            mSensorOrientation = sensorOrientation
+            mRoiCenterYRatio = roiCenterYRatio
+            mIsOcr = false
+            mObjectListener = objectListener
+            mObjectDetectFile = objectDetectFile
+        }
 
-		RunArguments(byte[] frameBytes, int width, int height, int format,
-					 int sensorOrientation, OnObjectListener objectListener, Context context,
-					 float roiCenterYRatio, File objectDetectFile) {
-			mFrameBytes = frameBytes;
-			mBitmap = null;
-			mWidth = width;
-			mHeight = height;
-			mFormat = format;
-			mScanListener = null;
-			mContext = context;
-			mSensorOrientation = sensorOrientation;
-			mRoiCenterYRatio = roiCenterYRatio;
-			mIsOcr = false;
-			mObjectListener = objectListener;
-			mObjectDetectFile = objectDetectFile;
-		}
+        // this should only be used for testing
+        constructor(bitmap: Bitmap?, scanListener: OnScanListener?, context: Context) {
+            mFrameBytes = null
+            mBitmap = bitmap
+            mWidth = bitmap?.width ?: 0
+            mHeight = bitmap?.height ?: 0
+            mFormat = 0
+            mScanListener = scanListener
+            mContext = context
+            mSensorOrientation = 0
+            mRoiCenterYRatio = 0f
+            mIsOcr = true
+            mObjectListener = null
+            mObjectDetectFile = null
+        }
 
-		// this should only be used for testing
-		RunArguments(Bitmap bitmap, OnScanListener scanListener, Context context) {
-			mFrameBytes = null;
-			mBitmap = bitmap;
-			mWidth = bitmap == null ? 0 : bitmap.getWidth();
-			mHeight = bitmap == null ? 0 : bitmap.getHeight();
-			mFormat = 0;
-			mScanListener = scanListener;
-			mContext = context;
-			mSensorOrientation = 0;
-			mRoiCenterYRatio = 0;
-			mIsOcr = true;
-			mObjectListener = null;
-			mObjectDetectFile = null;
-		}
+        // this should only be used for testing
+        constructor(
+            bitmap: Bitmap?,
+            objectListener: OnObjectListener?,
+            context: Context,
+            objectDetectFile: File?
+        ) {
+            mFrameBytes = null
+            mBitmap = bitmap
+            mWidth = bitmap?.width ?: 0
+            mHeight = bitmap?.height ?: 0
+            mFormat = 0
+            mScanListener = null
+            mContext = context
+            mSensorOrientation = 0
+            mRoiCenterYRatio = 0f
+            mIsOcr = false
+            mObjectListener = objectListener
+            mObjectDetectFile = objectDetectFile
+        }
+    }
 
-		// this should only be used for testing
-		RunArguments(Bitmap bitmap, OnObjectListener objectListener, Context context,
-					 File objectDetectFile) {
-			mFrameBytes = null;
-			mBitmap = bitmap;
-			mWidth = bitmap == null ? 0 : bitmap.getWidth();
-			mHeight = bitmap == null ? 0 : bitmap.getHeight();
-			mFormat = 0;
-			mScanListener = null;
-			mContext = context;
-			mSensorOrientation = 0;
-			mRoiCenterYRatio = 0;
-			mIsOcr = false;
-			mObjectListener = objectListener;
-			mObjectDetectFile = objectDetectFile;
-		}
-	}
+    private val queue: LinkedList<RunArguments> = LinkedList()
 
-	private LinkedList<RunArguments> queue = new LinkedList<>();
+    @Synchronized
+    fun warmUp(context: Context) {
+        if (OCR.isInit() || queue.isNotEmpty()) return
+        val args = RunArguments(null, 0, 0, 0, 90, null as OnScanListener?, context, 0.5f)
+        queue.push(args)
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        (this as Object).notify()
+    }
 
-	MachineLearningThread() {
-		super();
-	}
+    @Synchronized
+    fun post(bitmap: Bitmap, scanListener: OnScanListener, context: Context) {
+        val args = RunArguments(bitmap, scanListener, context)
+        queue.push(args)
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        (this as Object).notify()
+    }
 
-	synchronized void warmUp(Context context) {
-		if (OCR.isInit() || !queue.isEmpty()) {
-			return;
-		}
-		RunArguments args = new RunArguments(null, 0, 0, 0,
-				90, null, context, 0.5f);
-		queue.push(args);
-		notify();
-	}
+    @Synchronized
+    fun post(
+        bytes: ByteArray,
+        width: Int,
+        height: Int,
+        format: Int,
+        sensorOrientation: Int,
+        scanListener: OnScanListener,
+        context: Context,
+        roiCenterYRatio: Float
+    ) {
+        val args = RunArguments(bytes, width, height, format, sensorOrientation, scanListener, context, roiCenterYRatio)
+        queue.push(args)
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        (this as Object).notify()
+    }
 
-	synchronized void post(Bitmap bitmap, OnScanListener scanListener, Context context) {
-		RunArguments args = new RunArguments(bitmap, scanListener, context);
-		queue.push(args);
-		notify();
-	}
+    @Synchronized
+    fun post(bitmap: Bitmap, objectListener: OnObjectListener, context: Context, objectDetectFile: File?) {
+        val args = RunArguments(bitmap, objectListener, context, objectDetectFile)
+        queue.push(args)
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        (this as Object).notify()
+    }
 
-	synchronized void post(byte[] bytes, int width, int height, int format, int sensorOrientation,
-						   OnScanListener scanListener, Context context, float roiCenterYRatio) {
-		RunArguments args = new RunArguments(bytes, width, height, format, sensorOrientation,
-				scanListener, context, roiCenterYRatio);
-		queue.push(args);
-		notify();
-	}
+    @Synchronized
+    fun post(
+        bytes: ByteArray,
+        width: Int,
+        height: Int,
+        format: Int,
+        sensorOrientation: Int,
+        objectListener: OnObjectListener,
+        context: Context,
+        roiCenterYRatio: Float,
+        objectDetectFile: File?
+    ) {
+        val args = RunArguments(bytes, width, height, format, sensorOrientation, objectListener, context, roiCenterYRatio, objectDetectFile)
+        queue.push(args)
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        (this as Object).notify()
+    }
 
-	synchronized void post(Bitmap bitmap, OnObjectListener objectListener, Context context,
-						   File objectDetectFile) {
-		RunArguments args = new RunArguments(bitmap, objectListener, context, objectDetectFile);
-		queue.push(args);
-		notify();
-	}
+    // from https://stackoverflow.com/questions/43623817/android-yuv-nv12-to-rgb-conversion-with-renderscript
+    private fun yuvToRgb(yuvByteArray: ByteArray, w: Int, h: Int, ctx: Context): Bitmap {
+        val rs = RenderScript.create(ctx)
+        val yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.U8_4(rs))
 
-	synchronized void post(byte[] bytes, int width, int height, int format, int sensorOrientation,
-						   OnObjectListener objectListener, Context context, float roiCenterYRatio,
-						   File objectDetectFile) {
-		RunArguments args = new RunArguments(bytes, width, height, format, sensorOrientation,
-				objectListener, context, roiCenterYRatio, objectDetectFile);
-		queue.push(args);
-		notify();
-	}
+        val yuvType = Type.Builder(rs, Element.U8(rs)).setX(yuvByteArray.size)
+        val inAlloc = Allocation.createTyped(rs, yuvType.create(), Allocation.USAGE_SCRIPT)
 
-	// from https://stackoverflow.com/questions/43623817/android-yuv-nv12-to-rgb-conversion-with-renderscript
-	// interestingly the question had the right algorithm for our format (yuv nv21)
-	private Bitmap YUV_toRGB(byte[] yuvByteArray, int W, int H, Context ctx) {
-		RenderScript rs = RenderScript.create(ctx);
-		ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs,
-				Element.U8_4(rs));
+        val rgbaType = Type.Builder(rs, Element.RGBA_8888(rs)).setX(w).setY(h)
+        val outAlloc = Allocation.createTyped(rs, rgbaType.create(), Allocation.USAGE_SCRIPT)
 
-		Type.Builder yuvType = new Type.Builder(rs, Element.U8(rs)).setX(yuvByteArray.length);
-		Allocation in = Allocation.createTyped(rs, yuvType.create(), Allocation.USAGE_SCRIPT);
+        inAlloc.copyFrom(yuvByteArray)
 
-		Type.Builder rgbaType = new Type.Builder(rs, Element.RGBA_8888(rs)).setX(W).setY(H);
-		Allocation out = Allocation.createTyped(rs, rgbaType.create(), Allocation.USAGE_SCRIPT);
+        yuvToRgbIntrinsic.setInput(inAlloc)
+        yuvToRgbIntrinsic.forEach(outAlloc)
+        val bmp = createBitmap(w, h)
+        outAlloc.copyTo(bmp)
 
-		in.copyFrom(yuvByteArray);
+        yuvToRgbIntrinsic.destroy()
+        rs.destroy()
+        inAlloc.destroy()
+        outAlloc.destroy()
+        return bmp
+    }
 
-		yuvToRgbIntrinsic.setInput(in);
-		yuvToRgbIntrinsic.forEach(out);
-		Bitmap bmp = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888);
-		out.copyTo(bmp);
+    private fun getBitmap(
+        bytes: ByteArray,
+        width: Int,
+        height: Int,
+        format: Int,
+        sensorOrientation: Int,
+        roiCenterYRatio: Float,
+        ctx: Context,
+        isOcr: Boolean
+    ): Bitmap {
+        val bitmap = yuvToRgb(bytes, width, height, ctx)
 
-		yuvToRgbIntrinsic.destroy();
-		rs.destroy();
-		in.destroy();
-		out.destroy();
-		return bmp;
-	}
+        val orientation = sensorOrientation % 360
 
-	private Bitmap getBitmap(byte[] bytes, int width, int height, int format, int sensorOrientation,
-							 float roiCenterYRatio, Context ctx, boolean isOcr) {
-		final Bitmap bitmap = YUV_toRGB(bytes, width, height, ctx);
+        val h: Double
+        val w: Double
+        val x: Int
+        val y: Int
 
-		sensorOrientation = sensorOrientation % 360;
+        when (orientation) {
+            0 -> {
+                w = bitmap.width.toDouble()
+                h = if (isOcr) w * 302.0 / 480.0 else w
+                x = 0
+                y = Math.round(bitmap.height.toDouble() * roiCenterYRatio - h * 0.5).toInt()
+            }
 
-		double h;
-		double w;
-		int x;
-		int y;
+            90 -> {
+                h = bitmap.height.toDouble()
+                w = if (isOcr) h * 302.0 / 480.0 else h
+                y = 0
+                x = Math.round(bitmap.width.toDouble() * roiCenterYRatio - w * 0.5).toInt()
+            }
 
-		if (sensorOrientation == 0) {
-			w = bitmap.getWidth();
-			h = isOcr ? w * 302.0 / 480.0 : w;
-			x = 0;
-			y = (int) Math.round(((double) bitmap.getHeight()) * roiCenterYRatio - h * 0.5);
-		} else if (sensorOrientation == 90) {
-			h = bitmap.getHeight();
-			w = isOcr ? h * 302.0 / 480.0 : h;
-			y = 0;
-			x = (int) Math.round(((double) bitmap.getWidth()) * roiCenterYRatio - w * 0.5);
-		} else if (sensorOrientation == 180) {
-			w = bitmap.getWidth();
-			h = isOcr ? w * 302.0 / 480.0 : w;
-			x = 0;
-			y = (int) Math.round(((double) bitmap.getHeight()) * (1.0 - roiCenterYRatio) - h * 0.5);
-		} else {
-			h = bitmap.getHeight();
-			w = isOcr ? h * 302.0 / 480.0 : h;
-			x = (int) Math.round(((double) bitmap.getWidth()) * (1.0 - roiCenterYRatio) - w * 0.5);
-			y = 0;
-		}
+            180 -> {
+                w = bitmap.width.toDouble()
+                h = if (isOcr) w * 302.0 / 480.0 else w
+                x = 0
+                y = Math.round(bitmap.height.toDouble() * (1.0 - roiCenterYRatio) - h * 0.5).toInt()
+            }
 
-		// make sure that our crop stays within the image
-		if (x < 0) {
-			x = 0;
-		}
-		if (y < 0) {
-			y = 0;
-		}
-		if ((x + w) > bitmap.getWidth()) {
-			x = bitmap.getWidth() - (int) w;
-		}
-		if ((y + h) > bitmap.getHeight()) {
-			y = bitmap.getHeight() - (int) h;
-		}
+            else -> {
+                h = bitmap.height.toDouble()
+                w = if (isOcr) h * 302.0 / 480.0 else h
+                x = Math.round(bitmap.width.toDouble() * (1.0 - roiCenterYRatio) - w * 0.5).toInt()
+                y = 0
+            }
+        }
 
-		Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, (int) w, (int) h);
+        var cx = x
+        var cy = y
 
-		Matrix matrix = new Matrix();
-		matrix.postRotate(sensorOrientation);
-		Bitmap bm = Bitmap.createBitmap(croppedBitmap, 0, 0, croppedBitmap.getWidth(), croppedBitmap.getHeight(),
-				matrix, true);
+        // make sure that our crop stays within the image
+        if (cx < 0) cx = 0
+        if (cy < 0) cy = 0
+        if ((cx + w) > bitmap.width) cx = bitmap.width - w.toInt()
+        if ((cy + h) > bitmap.height) cy = bitmap.height - h.toInt()
 
-		croppedBitmap.recycle();
-		bitmap.recycle();
+        val croppedBitmap = Bitmap.createBitmap(bitmap, cx, cy, w.toInt(), h.toInt())
 
-		return bm;
-	}
+        val matrix = Matrix()
+        matrix.postRotate(orientation.toFloat())
+        val bm = Bitmap.createBitmap(croppedBitmap, 0, 0, croppedBitmap.width, croppedBitmap.height, matrix, true)
 
-	private synchronized RunArguments getNextImage() {
-		while (queue.size() == 0) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+        croppedBitmap.recycle()
+        bitmap.recycle()
 
-		return queue.pop();
-	}
+        return bm
+    }
 
-	private void runObjectModel(final Bitmap bitmap, final RunArguments args) {
-		if (args.mObjectDetectFile == null) {
-			Handler handler = new Handler(Looper.getMainLooper());
-			handler.post(new Runnable() {
-				@Override
-				public void run() {
-					if (args.mObjectListener != null) {
-						args.mObjectListener.onPrediction(bitmap, bitmap.getWidth(), bitmap.getHeight());
-					}
-				}
-			});
-			return;
-		}
+    @Synchronized
+    private fun getNextImage(): RunArguments {
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        while (queue.isEmpty()) {
+            try {
+                (this as Object).wait()
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+            }
+        }
+        return queue.pop()
+    }
 
-		Handler handler = new Handler(Looper.getMainLooper());
-		handler.post(new Runnable() {
-			public void run() {
-				try {
-					if (args.mObjectListener != null) {
-						args.mObjectListener.onPrediction(bitmap, bitmap.getWidth(), bitmap.getHeight());
-					}
-				} catch (Error | Exception e) {
-					// prevent callbacks from crashing the app, swallow it
-					e.printStackTrace();
-				}
-			}
-		});
-	}
+    private fun runObjectModel(bitmap: Bitmap, args: RunArguments) {
+        if (args.mObjectDetectFile == null) {
+            Handler(Looper.getMainLooper()).post {
+                args.mObjectListener?.onPrediction(bitmap, bitmap.width, bitmap.height)
+            }
+            return
+        }
 
-	private void runOcrModel(final Bitmap bitmap, final RunArguments args) {
-		final OCR ocr = new OCR();
-		final String number = ocr.predict(bitmap, args.mContext);
-		final boolean hadUnrecoverableException = ocr.hadUnrecoverableException;
-		Handler handler = new Handler(Looper.getMainLooper());
-		handler.post(new Runnable() {
-			public void run() {
-				try {
-					if (args.mScanListener != null) {
-						if (hadUnrecoverableException) {
-							args.mScanListener.onFatalError();
-						} else {
-							args.mScanListener.onPrediction(number, ocr.expiry, bitmap, ocr.digitBoxes,
-									ocr.expiryBox);
-						}
-					}
-				} catch (Error | Exception e) {
-					// prevent callbacks from crashing the app, swallow it
-					e.printStackTrace();
-				}
-			}
-		});
-	}
+        Handler(Looper.getMainLooper()).post {
+            try {
+                args.mObjectListener?.onPrediction(bitmap, bitmap.width, bitmap.height)
+            } catch (e: Throwable) {
+                // prevent callbacks from crashing the app, swallow it
+                e.printStackTrace()
+            }
+        }
+    }
 
-	private void runModel() {
-		final RunArguments args = getNextImage();
+    private fun runOcrModel(bitmap: Bitmap, args: RunArguments) {
+        val ocr = OCR()
+        val number = ocr.predict(bitmap, args.mContext)
+        val hadUnrecoverableException = ocr.hadUnrecoverableException
+        Handler(Looper.getMainLooper()).post {
+            try {
+                if (args.mScanListener != null) {
+                    if (hadUnrecoverableException) {
+                        args.mScanListener.onFatalError()
+                    } else {
+                        args.mScanListener.onPrediction(number, ocr.expiry, bitmap, ocr.digitBoxes, ocr.expiryBox)
+                    }
+                }
+            } catch (e: Throwable) {
+                // prevent callbacks from crashing the app, swallow it
+                e.printStackTrace()
+            }
+        }
+    }
 
-		Bitmap bm;
-		if (args.mFrameBytes != null) {
-			bm = getBitmap(args.mFrameBytes, args.mWidth, args.mHeight, args.mFormat,
-					args.mSensorOrientation, args.mRoiCenterYRatio, args.mContext, args.mIsOcr);
-		} else if (args.mBitmap != null) {
-			bm = args.mBitmap;
-		} else {
-			bm = Bitmap.createBitmap(480, 302, Bitmap.Config.ARGB_8888);
-			Canvas canvas = new Canvas(bm);
-			Paint paint = new Paint();
-			paint.setColor(Color.GRAY);
-			canvas.drawRect(0.0f, 0.0f, 480.0f, 302.0f, paint);
-		}
+    private fun runModel() {
+        val args = getNextImage()
 
-		if (args.mIsOcr) {
-			runOcrModel(bm, args);
-		} else {
-			runObjectModel(bm, args);
-		}
-	}
+        val bm: Bitmap = if (args.mFrameBytes != null) {
+            getBitmap(
+                args.mFrameBytes, args.mWidth, args.mHeight, args.mFormat,
+                args.mSensorOrientation, args.mRoiCenterYRatio, args.mContext, args.mIsOcr
+            )
+        } else if (args.mBitmap != null) {
+            args.mBitmap
+        } else {
+            val b = createBitmap(480, 302)
+            val canvas = Canvas(b)
+            val paint = Paint()
+            paint.color = Color.GRAY
+            canvas.drawRect(0f, 0f, 480f, 302f, paint)
+            b
+        }
 
-	@Override
-	public void run() {
-		while (true) {
-			try {
-				runModel();
-			} catch (Error | Exception e) {
-				// center field exception handling, make sure that the ml thread keeps running
-				e.printStackTrace();
-			}
-		}
-	}
+        if (args.mIsOcr) {
+            runOcrModel(bm, args)
+        } else {
+            runObjectModel(bm, args)
+        }
+    }
+
+    override fun run() {
+        while (true) {
+            try {
+                runModel()
+            } catch (e: Throwable) {
+                // center field exception handling, make sure that the ml thread keeps running
+                e.printStackTrace()
+            }
+        }
+    }
 }

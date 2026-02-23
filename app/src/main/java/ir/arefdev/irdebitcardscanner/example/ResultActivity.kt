@@ -1,41 +1,37 @@
-package ir.arefdev.irdebitcardscanner.example;
+package ir.arefdev.irdebitcardscanner.example
 
-import android.os.Bundle;
-import android.text.TextUtils;
-import android.widget.TextView;
+import android.os.Bundle
+import android.text.TextUtils
+import android.widget.TextView
+import androidx.appcompat.app.AppCompatActivity
+import com.arefdev.irdebitcardscanner.example.R
+import ir.arefdev.irdebitcardscanner.DebitCard
 
-import androidx.appcompat.app.AppCompatActivity;
+class ResultActivity : AppCompatActivity() {
 
-import com.arefdev.irdebitcardscanner.example.R;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_result)
 
-import ir.arefdev.irdebitcardscanner.DebitCard;
+        val number = intent.getStringExtra("cardNumber")
+        val expiryMonth = intent.getIntExtra("cardExpiryMonth", 0)
+        val expiryYear = intent.getIntExtra("cardExpiryYear", 0)
+        val card = DebitCard(number!!, expiryMonth, expiryYear)
 
-public class ResultActivity extends AppCompatActivity {
+        val cardInputWidget = findViewById<TextView>(R.id.card_input_widget)
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_result);
+        val formattedCardNumber = StringBuilder()
+        for (i in 0..<card.number.length) {
+            if (i == 4 || i == 8 || i == 12) {
+                formattedCardNumber.append(" ")
+            }
+            formattedCardNumber.append(card.number.get(i))
+        }
+        var txt = formattedCardNumber.toString()
 
-		String number = getIntent().getStringExtra("cardNumber");
-		int expiryMonth = getIntent().getIntExtra("cardExpiryMonth", 0);
-		int expiryYear = getIntent().getIntExtra("cardExpiryYear", 0);
-		DebitCard card = new DebitCard(number, expiryMonth, expiryYear);
-
-		TextView cardInputWidget = findViewById(R.id.card_input_widget);
-
-		StringBuilder formattedCardNumber = new StringBuilder();
-		for (int i = 0; i < card.number.length(); i++) {
-			if (i == 4 || i == 8 || i == 12) {
-				formattedCardNumber.append(" ");
-			}
-			formattedCardNumber.append(card.number.charAt(i));
-		}
-		String txt = formattedCardNumber.toString();
-
-		if (!TextUtils.isEmpty(card.expiryForDisplay())) {
-			txt += " \t " + card.expiryForDisplay();
-		}
-		cardInputWidget.setText(txt);
-	}
+        if (!TextUtils.isEmpty(card.expiryForDisplay())) {
+            txt += " \t " + card.expiryForDisplay()
+        }
+        cardInputWidget.text = txt
+    }
 }

@@ -1,132 +1,114 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.graphics.Bitmap;
+import android.graphics.Bitmap
 
-import java.util.ArrayList;
-import java.util.Collections;
+internal class RecognizedDigits private constructor(
+    private val digits: ArrayList<Int>,
+    private val confidence: ArrayList<Float>
+) {
 
-class RecognizedDigits {
+    companion object {
 
-	private static final int kNumPredictions = RecognizedDigitsModel.kNumPredictions;
-	private ArrayList<Integer> digits;
-	private ArrayList<Float> confidence;
+        private const val kNumPredictions = RecognizedDigitsModel.kNumPredictions
+        private const val kBackgroundClass = 10
+        private const val kDigitMinConfidence = 0.15f
 
-	private static final int kBackgroundClass = 10;
-	private static final float kDigitMinConfidence = (float) 0.15;
+        fun from(model: RecognizedDigitsModel, image: Bitmap, box: CGRect): RecognizedDigits {
+            val frame = Bitmap.createBitmap(image, Math.round(box.x), Math.round(box.y), box.width.toInt(), box.height.toInt())
+            model.classifyFrame(frame)
 
-	private RecognizedDigits(ArrayList<Integer> digits, ArrayList<Float> confidence) {
-		this.digits = digits;
-		this.confidence = confidence;
-	}
+            val digits = ArrayList<Int>()
+            val confidence = ArrayList<Float>()
 
-	static RecognizedDigits from(RecognizedDigitsModel model, Bitmap image, CGRect box) {
-		final Bitmap frame = Bitmap.createBitmap(image, Math.round(box.x), Math.round(box.y),
-				(int) box.width, (int) box.height);
-		model.classifyFrame(frame);
+            for (col in 0 until kNumPredictions) {
+                val argAndConf = model.argAndValueMax(col)
+                if (argAndConf.confidence < kDigitMinConfidence) {
+                    digits.add(kBackgroundClass)
+                } else {
+                    digits.add(argAndConf.argMax)
+                }
+                confidence.add(argAndConf.confidence)
+            }
 
-		ArrayList<Integer> digits = new ArrayList<>();
-		ArrayList<Float> confidence = new ArrayList<>();
+            return RecognizedDigits(digits, confidence)
+        }
+    }
 
-		for (int col = 0; col < kNumPredictions; col++) {
-			RecognizedDigitsModel.ArgMaxAndConfidence argAndConf = model.argAndValueMax(col);
+    private fun nonMaxSuppression(): ArrayList<Int> {
+        val digits = ArrayList<Int>(this.digits)
+        val confidence = ArrayList<Float>(this.confidence)
 
-			if (argAndConf.confidence < kDigitMinConfidence) {
-				digits.add(kBackgroundClass);
-			} else {
-				digits.add(argAndConf.argMax);
-			}
-			confidence.add(argAndConf.confidence);
-		}
+        // greedy non-max suppression
+        for (idx in 0 until (kNumPredictions - 1)) {
+            if (digits[idx] != kBackgroundClass && digits[idx + 1] != kBackgroundClass) {
+                if (confidence[idx] < confidence[idx + 1]) {
+                    digits[idx] = kBackgroundClass
+                    confidence[idx] = 1.0f
+                } else {
+                    digits[idx + 1] = kBackgroundClass
+                    confidence[idx + 1] = 1.0f
+                }
+            }
+        }
 
-		return new RecognizedDigits(digits, confidence);
-	}
+        return digits
+    }
 
-	private ArrayList<Integer> nonMaxSuppression() {
-		ArrayList<Integer> digits = new ArrayList<>(this.digits);
-		ArrayList<Float> confidence = new ArrayList<>(this.confidence);
+    fun stringResult(): String {
+        val digits = nonMaxSuppression()
+        val result = StringBuilder()
+        for (digit in digits) {
+            if (digit != kBackgroundClass) result.append(digit)
+        }
+        return result.toString()
+    }
 
-		// greedy non max suppression
-		for (int idx = 0; idx < (kNumPredictions - 1); idx++) {
-			if (digits.get(idx) != kBackgroundClass && digits.get(idx + 1) != kBackgroundClass) {
-				if (confidence.get(idx) < confidence.get(idx + 1)) {
-					digits.set(idx, kBackgroundClass);
-					confidence.set(idx, (float) 1.0);
-				} else {
-					digits.set(idx + 1, kBackgroundClass);
-					confidence.set(idx + 1, (float) 1.0);
-				}
-			}
-		}
+    fun four(): String {
+        val digits = nonMaxSuppression()
+        var result = stringResult()
 
-		return digits;
-	}
+        if (result.length < 4) return ""
 
-	String stringResult() {
-		ArrayList<Integer> digits = nonMaxSuppression();
-		StringBuilder result = new StringBuilder();
-		for (Integer digit : digits) {
-			if (digit != kBackgroundClass) {
-				result.append(digit);
-			}
-		}
-		return result.toString();
-	}
+        // since we know that we have too many digits, trim from the outer most digits. Since we
+        // designed our detection model to center digits, this should work
+        var fromLeft = true
+        var leftIdx = 0
+        var rightIdx = digits.size - 1
+        while (result.length > 4) {
+            if (fromLeft) {
+                if (digits[leftIdx] != kBackgroundClass) {
+                    result = result.substring(1)
+                    digits[leftIdx] = kBackgroundClass
+                }
+                fromLeft = false
+                leftIdx += 1
+            } else {
+                if (digits[rightIdx] != kBackgroundClass) {
+                    result = result.substring(0, result.length - 1)
+                    digits[rightIdx] = kBackgroundClass
+                }
+                fromLeft = true
+                rightIdx -= 1
+            }
+        }
 
-	String four() {
-		ArrayList<Integer> digits = nonMaxSuppression();
-		String result = stringResult();
+        // as a last error check make sure that all the digits are equally
+        // spaced and reject the whole lot if they aren't.
+        val positions = ArrayList<Int>()
+        for (idx in digits.indices) {
+            if (digits[idx] != kBackgroundClass) positions.add(idx)
+        }
+        val deltas = ArrayList<Int>()
+        for (idx in 1 until positions.size) {
+            deltas.add(positions[idx] - positions[idx - 1])
+        }
 
-		if (result.length() < 4) {
-			return "";
-		}
+        deltas.sort()
+        val maxDelta = deltas[deltas.size - 1]
+        val minDelta = deltas[0]
 
-		// since we know that we have too many digits, trim from the outer most digits. Since we
-		// designed our detection model to center digits, this should work
-		boolean fromLeft = true;
-		int leftIdx = 0;
-		int rightIdx = digits.size() - 1;
-		while (result.length() > 4) {
-			if (fromLeft) {
-				if (digits.get(leftIdx) != kBackgroundClass) {
-					result = result.substring(1);
-					digits.set(leftIdx, kBackgroundClass);
-				}
-				fromLeft = false;
-				leftIdx += 1;
-			} else {
-				if (digits.get(rightIdx) != kBackgroundClass) {
-					result = result.substring(0, result.length() - 1);
-					digits.set(rightIdx, kBackgroundClass);
-				}
-				fromLeft = true;
-				rightIdx -= 1;
-			}
-		}
+        if (maxDelta > (minDelta + 1)) return ""
 
-		// as a last error check make sure that all of the digits are equally
-		// spaced and reject the whole lot if they aren't. This can fix errors
-		// on cards with hard to read digits and small fonts where it can sometimes
-		// pick up edge digits from another group.
-		ArrayList<Integer> positions = new ArrayList<>();
-		for (int idx = 0; idx < digits.size(); idx++) {
-			if (digits.get(idx) != kBackgroundClass) {
-				positions.add(idx);
-			}
-		}
-		ArrayList<Integer> deltas = new ArrayList<>();
-		// start from one to compare neighbor values
-		for (int idx = 1; idx < positions.size(); idx++) {
-			deltas.add(positions.get(idx) - positions.get(idx - 1));
-		}
-
-		Collections.sort(deltas);
-		int maxDelta = deltas.get(deltas.size() - 1);
-		int minDelta = deltas.get(0);
-
-		if (maxDelta > (minDelta + 1)) {
-			return "";
-		}
-
-		return result;
-	}
+        return result
+    }
 }

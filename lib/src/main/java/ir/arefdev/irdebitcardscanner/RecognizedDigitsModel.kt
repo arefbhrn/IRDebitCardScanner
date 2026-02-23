@@ -1,79 +1,50 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.content.Context;
+import android.content.Context
+import java.io.IOException
+import java.nio.MappedByteBuffer
 
-import java.io.IOException;
-import java.nio.MappedByteBuffer;
+class RecognizedDigitsModel @Throws(IOException::class) constructor(context: Context) : ImageClassifier(context) {
 
-class RecognizedDigitsModel extends ImageClassifier {
+    companion object {
+        const val kNumPredictions = 17
+    }
 
-	static final int kNumPredictions = 17;
-	private final int classes = 11;
+    private val classes = 11
+    private val labelProbArray = Array(1) { Array(1) { Array(kNumPredictions) { FloatArray(classes) } } }
 
-	/**
-	 * An array to hold inference results, to be feed into Tensorflow Lite as outputs. This isn't part
-	 * of the super class, because we need a primitive array here.
-	 */
-	private float[][][][] labelProbArray;
+    inner class ArgMaxAndConfidence(val argMax: Int, val confidence: Float)
 
-	RecognizedDigitsModel(Context context) throws IOException {
-		super(context);
-		labelProbArray = new float[1][1][kNumPredictions][classes];
-	}
+    fun argAndValueMax(col: Int): ArgMaxAndConfidence {
+        var maxIdx = -1
+        var maxValue = -1f
+        for (idx in 0 until classes) {
+            val value = labelProbArray[0][0][col][idx]
+            if (value > maxValue) {
+                maxIdx = idx
+                maxValue = value
+            }
+        }
+        return ArgMaxAndConfidence(maxIdx, maxValue)
+    }
 
-	class ArgMaxAndConfidence {
-		final int argMax;
-		final float confidence;
+    @Throws(IOException::class)
+    override fun loadModelFile(context: Context): MappedByteBuffer =
+        ResourceModelFactory.loadRecognizeDigitsFile(context)
 
-		ArgMaxAndConfidence(int argMax, float confidence) {
-			this.argMax = argMax;
-			this.confidence = confidence;
-		}
-	}
+    override fun getImageSizeX(): Int = 80
 
-	ArgMaxAndConfidence argAndValueMax(int col) {
-		int maxIdx = -1;
-		float maxValue = (float) -1.0;
-		for (int idx = 0; idx < classes; idx++) {
-			float value = this.labelProbArray[0][0][col][idx];
-			if (value > maxValue) {
-				maxIdx = idx;
-				maxValue = value;
-			}
-		}
+    override fun getImageSizeY(): Int = 36
 
-		return new ArgMaxAndConfidence(maxIdx, maxValue);
-	}
+    override fun getNumBytesPerChannel(): Int = 4
 
-	@Override
-	MappedByteBuffer loadModelFile(Context context) throws IOException {
-		return ResourceModelFactory.getInstance().loadRecognizeDigitsFile(context);
-	}
+    override fun addPixelValue(pixelValue: Int) {
+        imgData!!.putFloat(((pixelValue shr 16) and 0xFF) / 255f)
+        imgData!!.putFloat(((pixelValue shr 8) and 0xFF) / 255f)
+        imgData!!.putFloat((pixelValue and 0xFF) / 255f)
+    }
 
-	@Override
-	protected int getImageSizeX() {
-		return 80;
-	}
-
-	@Override
-	protected int getImageSizeY() {
-		return 36;
-	}
-
-	@Override
-	protected int getNumBytesPerChannel() {
-		return 4;
-	}
-
-	@Override
-	protected void addPixelValue(int pixelValue) {
-		imgData.putFloat(((pixelValue >> 16) & 0xFF) / 255.f);
-		imgData.putFloat(((pixelValue >> 8) & 0xFF) / 255.f);
-		imgData.putFloat((pixelValue & 0xFF) / 255.f);
-	}
-
-	@Override
-	protected void runInference() {
-		tflite.run(imgData, labelProbArray);
-	}
+    override fun runInference() {
+        tflite.run(imgData, labelProbArray)
+    }
 }

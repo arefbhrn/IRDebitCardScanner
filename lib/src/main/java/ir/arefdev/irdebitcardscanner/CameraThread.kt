@@ -1,54 +1,53 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.hardware.Camera;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
+import android.hardware.Camera
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
 
-class CameraThread extends Thread {
+internal class CameraThread : Thread() {
 
-	private OnCameraOpenListener listener;
+    private var listener: OnCameraOpenListener? = null
 
-	synchronized void startCamera(OnCameraOpenListener listener) {
-		this.listener = listener;
-		notify();
-	}
+    @Synchronized
+    fun startCamera(listener: OnCameraOpenListener) {
+        this.listener = listener
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        (this as Object).notify()
+    }
 
-	private synchronized OnCameraOpenListener waitForOpenRequest() {
-		while (this.listener == null) {
-			try {
-				wait();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
+    @Synchronized
+    private fun waitForOpenRequest(): OnCameraOpenListener {
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
+        while (this.listener == null) {
+            try {
+                (this as Object).wait()
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+            }
+        }
 
-		OnCameraOpenListener listener = this.listener;
-		this.listener = null;
-		return listener;
-	}
+        val listener = this.listener!!
+        this.listener = null
+        return listener
+    }
 
-	@Override
-	public void run() {
-		while (true) {
-			final OnCameraOpenListener listener = waitForOpenRequest();
+    override fun run() {
+        while (true) {
+            val listener = waitForOpenRequest()
 
-			Camera camera = null;
-			try {
-				camera = Camera.open();
-			} catch (Exception e) {
-				Log.e("CameraThread", "failed to open Camera");
-				e.printStackTrace();
-			}
+            var camera: Camera? = null
+            try {
+                camera = Camera.open()
+            } catch (e: Exception) {
+                Log.e("CameraThread", "failed to open Camera")
+                e.printStackTrace()
+            }
 
-			final Camera resultCamera = camera;
-			Handler handler = new Handler(Looper.getMainLooper());
-			handler.post(new Runnable() {
-				@Override
-				public void run() {
-					listener.onCameraOpen(resultCamera);
-				}
-			});
-		}
-	}
+            val resultCamera = camera
+            Handler(Looper.getMainLooper()).post {
+                listener.onCameraOpen(resultCamera)
+            }
+        }
+    }
 }

@@ -1,124 +1,95 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.app.Activity;
-import android.content.Intent;
-import android.text.TextUtils;
-
-import androidx.annotation.NonNull;
-
-import java.util.Map;
+import android.app.Activity
+import android.content.Intent
+import android.text.TextUtils
 
 /**
  * The ScanActivity class provides the main interface to the scanning functionality. To use this
- * activity, call the {@link ScanActivity#start(Activity)} method and override
+ * activity, call the [ScanActivity.start] method and override
  * onActivityResult in your own activity to get the result of the scan.
  */
-public class ScanActivity {
+class ScanActivity {
 
-	private static final int REQUEST_CODE = 51234;
-	public static final int RESULT_CANCELED = ScanActivityImpl.RESULT_CANCELED;
-	public static String RESULT_FATAL_ERROR = ScanBaseActivity.RESULT_FATAL_ERROR;
+    companion object {
+        private const val REQUEST_CODE = 51234
 
-	/**
-	 * Starts a ScanActivityImpl activity, using {@param activity} as a parent.
-	 *
-	 * @param activity the parent activity that is waiting for the result of the ScanActivity
-	 */
-	public static void start(@NonNull Activity activity) {
-		ScanBaseActivity.warmUp(activity.getApplicationContext());
-		Intent intent = new Intent(activity, ScanActivityImpl.class);
-		activity.startActivityForResult(intent, REQUEST_CODE);
-	}
+        const val RESULT_CANCELED = Activity.RESULT_CANCELED
 
-	/**
-	 * Starts a scan activity and customizes the text that it displays.
-	 *
-	 * @param activity         the parent activity that is waiting for the result of the ScanActivity
-	 * @param scanCardText     the large text above the card rectangle
-	 * @param positionCardText the small text below the card rectangle
-	 */
-	public static void start(@NonNull Activity activity, String scanCardText, String positionCardText) {
-		ScanBaseActivity.warmUp(activity.getApplicationContext());
-		Intent intent = new Intent(activity, ScanActivityImpl.class);
-		intent.putExtra(ScanActivityImpl.SCAN_CARD_TEXT, scanCardText);
-		intent.putExtra(ScanActivityImpl.POSITION_CARD_TEXT, positionCardText);
-		activity.startActivityForResult(intent, REQUEST_CODE);
-	}
+        @JvmField
+        var RESULT_FATAL_ERROR = ScanBaseActivity.RESULT_FATAL_ERROR
 
-	/**
-	 * Initializes the machine learning models and GPU hardware for faster scan performance.
-	 * <p>
-	 * This optional static method initializes the machine learning models and GPU hardware in a
-	 * background thread so that when the ScanActivity starts it can complete its first scan
-	 * quickly. App builders can choose to not call this method and they can call it multiple
-	 * times safely.
-	 * <p>
-	 * This method is thread safe.
-	 *
-	 * @param activity the activity that invokes this method, which the library uses to get
-	 *                 an application context.
-	 */
-	public static void warmUp(@NonNull Activity activity) {
-		ScanBaseActivity.warmUp(activity.getApplicationContext());
-	}
+        /**
+         * Starts a ScanActivityImpl activity, using [activity] as a parent.
+         */
+        @JvmStatic
+        fun start(activity: Activity) {
+            ScanBaseActivity.warmUp(activity.applicationContext)
+            val intent = Intent(activity, ScanActivityImpl::class.java)
+            activity.startActivityForResult(intent, REQUEST_CODE)
+        }
 
-	/**
-	 * Starts the scan activity and turns on a small debugging window in the bottom left.
-	 * <p>
-	 * This debugging activity helps designers see some of the machine learning model's internals
-	 * by showing boxes around digits and expiry dates that it detects.
-	 *
-	 * @param activity the parent activity that is waiting for the result of the ScanActivity
-	 */
-	public static void startDebug(@NonNull Activity activity) {
-		ScanBaseActivity.warmUp(activity.getApplicationContext());
-		Intent intent = new Intent(activity, ScanActivityImpl.class);
-		intent.putExtra("debug", true);
-		activity.startActivityForResult(intent, REQUEST_CODE);
-	}
+        /**
+         * Starts a scan activity and customizes the text that it displays.
+         */
+        @JvmStatic
+        fun start(activity: Activity, scanCardText: String?, positionCardText: String?) {
+            ScanBaseActivity.warmUp(activity.applicationContext)
+            val intent = Intent(activity, ScanActivityImpl::class.java)
+            intent.putExtra(ScanActivityImpl.SCAN_CARD_TEXT, scanCardText)
+            intent.putExtra(ScanActivityImpl.POSITION_CARD_TEXT, positionCardText)
+            activity.startActivityForResult(intent, REQUEST_CODE)
+        }
 
-	/**
-	 * A helper method to use within your onActivityResult method to check if the result is from our
-	 * scan activity.
-	 *
-	 * @param requestCode the requestCode passed into the onActivityResult method
-	 * @return true if the requestCode matches the requestCode we use for ScanActivity instances
-	 */
-	public static boolean isScanResult(int requestCode) {
-		return requestCode == REQUEST_CODE;
-	}
+        /**
+         * Initializes the machine learning models and GPU hardware for faster scan performance.
+         */
+        @JvmStatic
+        fun warmUp(activity: Activity) {
+            ScanBaseActivity.warmUp(activity.applicationContext)
+        }
 
-	/**
-	 * Adds custom card number prefix-to-bank-slug mappings, merged on top of the built-in ones.
-	 * Call this before starting a scan. Existing built-in entries are preserved; entries with
-	 * the same prefix are overridden by the provided map.
-	 *
-	 * @param starters a map of 6-digit card number prefixes to bank slug strings
-	 */
-	public static void addCardNumberStarters(@NonNull Map<String, String> starters) {
-		DebitCardUtils.addCardNumberStarters(starters);
-	}
+        /**
+         * Starts the scan activity and turns on a small debugging window in the bottom left.
+         */
+        @JvmStatic
+        fun startDebug(activity: Activity) {
+            ScanBaseActivity.warmUp(activity.applicationContext)
+            val intent = Intent(activity, ScanActivityImpl::class.java)
+            intent.putExtra("debug", true)
+            activity.startActivityForResult(intent, REQUEST_CODE)
+        }
 
-	/**
-	 * Validates an Iranian IBAN (26 characters: IR + 2 check digits + 22-digit BBAN).
-	 * Spaces are stripped and the string is case-insensitive before validation.
-	 *
-	 * @param iban the IBAN string to validate
-	 * @return true if the IBAN is structurally valid
-	 */
-	public static boolean isIbanValid(String iban) {
-		return DebitCardUtils.isIbanValid(iban);
-	}
+        /**
+         * A helper method to use within your onActivityResult method to check if the result is
+         * from our scan activity.
+         */
+        @JvmStatic
+        fun isScanResult(requestCode: Int): Boolean = requestCode == REQUEST_CODE
 
-	public static DebitCard debitCardFromResult(Intent intent) {
-		String number = intent.getStringExtra(ScanActivityImpl.RESULT_CARD_NUMBER);
-		int month = intent.getIntExtra(ScanActivityImpl.RESULT_EXPIRY_MONTH, 0);
-		int year = intent.getIntExtra(ScanActivityImpl.RESULT_EXPIRY_YEAR, 0);
+        /**
+         * Adds custom card number prefix-to-bank-slug mappings, merged on top of the built-in ones.
+         */
+        @JvmStatic
+        fun addCardNumberStarters(starters: Map<String, String>) {
+            DebitCardUtils.addCardNumberStarters(starters)
+        }
 
-		if (TextUtils.isEmpty(number)) {
-			return null;
-		}
+        /**
+         * Validates an Iranian IBAN (26 characters: IR + 2 check digits + 22-digit BBAN).
+         */
+        @JvmStatic
+        fun isIbanValid(iban: String?): Boolean = DebitCardUtils.isIbanValid(iban)
 
-		return new DebitCard(number, month, year);
-	}
+        @JvmStatic
+        fun debitCardFromResult(intent: Intent): DebitCard? {
+            val number = intent.getStringExtra(ScanActivityImpl.RESULT_CARD_NUMBER)
+            val month = intent.getIntExtra(ScanActivityImpl.RESULT_EXPIRY_MONTH, 0)
+            val year = intent.getIntExtra(ScanActivityImpl.RESULT_EXPIRY_YEAR, 0)
+
+            if (TextUtils.isEmpty(number)) return null
+
+            return DebitCard(number!!, month, year)
+        }
+    }
 }

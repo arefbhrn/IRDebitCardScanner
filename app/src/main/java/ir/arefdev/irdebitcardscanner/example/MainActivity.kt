@@ -1,63 +1,70 @@
-package ir.arefdev.irdebitcardscanner.example;
+package ir.arefdev.irdebitcardscanner.example
 
-import android.app.Activity;
-import android.content.Intent;
-import android.os.Bundle;
-import android.util.Log;
-import android.view.View;
+import android.content.Intent
+import android.os.Bundle
+import android.util.Log
+import android.view.View
+import androidx.appcompat.app.AppCompatActivity
+import com.arefdev.irdebitcardscanner.example.R
+import ir.arefdev.irdebitcardscanner.ScanActivity
+import ir.arefdev.irdebitcardscanner.ScanActivity.Companion.debitCardFromResult
+import ir.arefdev.irdebitcardscanner.ScanActivity.Companion.isScanResult
+import ir.arefdev.irdebitcardscanner.ScanActivity.Companion.start
+import ir.arefdev.irdebitcardscanner.ScanActivity.Companion.startDebug
+import ir.arefdev.irdebitcardscanner.ScanActivity.Companion.warmUp
 
-import androidx.appcompat.app.AppCompatActivity;
+class MainActivity : AppCompatActivity(), View.OnClickListener {
 
-import com.arefdev.irdebitcardscanner.example.R;
+    companion object {
+        const val TAG: String = "MainActivity"
+    }
 
-import ir.arefdev.irdebitcardscanner.DebitCard;
-import ir.arefdev.irdebitcardscanner.ScanActivity;
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_launch)
 
-public class LaunchActivity extends AppCompatActivity implements View.OnClickListener {
+        warmUp(this)
+    }
 
-	public static final String TAG = "LaunchActivity";
+    override fun onClick(v: View) {
+        when (v.id) {
+            R.id.scan_button -> {
+                start(this)
+            }
 
-	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_launch);
+            R.id.scanCardDebug -> {
+                startDebug(this)
+            }
 
-		ScanActivity.warmUp(this);
-	}
+            R.id.scanCardAltText -> {
+                start(
+                    this, "Debit Card Scan",
+                    "Position your card in the frame so the card number is visible"
+                )
+            }
+        }
+    }
 
-	@Override
-	public void onClick(View v) {
-		if (v.getId() == R.id.scan_button) {
-			ScanActivity.start(this);
-		} else if (v.getId() == R.id.scanCardDebug) {
-			ScanActivity.startDebug(this);
-		} else if (v.getId() == R.id.scanCardAltText) {
-			ScanActivity.start(this, "Debit Card Scan",
-					"Position your card in the frame so the card number is visible");
-		}
-	}
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
-	@Override
-	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		super.onActivityResult(requestCode, resultCode, data);
+        if (isScanResult(requestCode)) {
+            if (resultCode == RESULT_OK && data != null) {
+                val scanResult = debitCardFromResult(data)
 
-		if (ScanActivity.isScanResult(requestCode)) {
-			if (resultCode == Activity.RESULT_OK && data != null) {
-				DebitCard scanResult = ScanActivity.debitCardFromResult(data);
-
-				Intent intent = new Intent(this, ResultActivity.class);
-				intent.putExtra("cardNumber", scanResult.number);
-				intent.putExtra("cardExpiryMonth", scanResult.expiryMonth);
-				intent.putExtra("cardExpiryYear", scanResult.expiryYear);
-				startActivity(intent);
-			} else if (resultCode == ScanActivity.RESULT_CANCELED) {
-				boolean fatalError = data.getBooleanExtra(ScanActivity.RESULT_FATAL_ERROR, false);
-				if (fatalError) {
-					Log.d(TAG, "fatal error");
-				} else {
-					Log.d(TAG, "The user pressed the back button");
-				}
-			}
-		}
-	}
+                val intent = Intent(this, ResultActivity::class.java)
+                intent.putExtra("cardNumber", scanResult!!.number)
+                intent.putExtra("cardExpiryMonth", scanResult.expiryMonth)
+                intent.putExtra("cardExpiryYear", scanResult.expiryYear)
+                startActivity(intent)
+            } else if (resultCode == ScanActivity.RESULT_CANCELED) {
+                val fatalError = data!!.getBooleanExtra(ScanActivity.RESULT_FATAL_ERROR, false)
+                if (fatalError) {
+                    Log.d(TAG, "fatal error")
+                } else {
+                    Log.d(TAG, "The user pressed the back button")
+                }
+            }
+        }
+    }
 }

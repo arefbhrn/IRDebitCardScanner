@@ -1,34 +1,26 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.content.Context;
-import android.util.AttributeSet;
+import android.content.Context
+import android.util.AttributeSet
+import com.arefbhrn.irdebitcardscanner.R
 
-import com.arefbhrn.irdebitcardscanner.R;
+class OverlayWhite(context: Context, attrs: AttributeSet) : Overlay(context, attrs) {
 
-public class OverlayWhite extends Overlay {
+    private var backgroundColorId = R.color.irdcs_white_background
+    private var cornerColorId = R.color.irdcs_gray
 
-	int backgroundColorId = R.color.irdcs_white_background;
-	int cornerColorId = R.color.irdcs_gray;
+    init {
+        setLayerType(LAYER_TYPE_SOFTWARE, null)
+        cornerDp = 3
+    }
 
-	public OverlayWhite(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		setLayerType(LAYER_TYPE_SOFTWARE, null);
-		cornerDp = 3;
-	}
+    fun setColorIds(backgroundColorId: Int, cornerColorId: Int) {
+        this.backgroundColorId = backgroundColorId
+        this.cornerColorId = cornerColorId
+        postInvalidate()
+    }
 
-	public void setColorIds(int backgroundColorId, int cornerColorId) {
-		this.backgroundColorId = backgroundColorId;
-		this.cornerColorId = cornerColorId;
-		postInvalidate();
-	}
+    override fun getBackgroundColorId(): Int = backgroundColorId
 
-	@Override
-	protected int getBackgroundColorId() {
-		return backgroundColorId;
-	}
-
-	@Override
-	protected int getCornerColorId() {
-		return cornerColorId;
-	}
+    override fun getCornerColorId(): Int = cornerColorId
 }

@@ -1,39 +1,19 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-public class DebitCard {
+class DebitCard(@JvmField val number: String, @JvmField val expiryMonth: Int, @JvmField val expiryYear: Int) {
 
-	public final String number;
-	public final int expiryMonth;
-	public final int expiryYear;
+    fun last4(): String = number.substring(number.length - 4)
 
-	public DebitCard(String number, int expiryMonth, int expiryYear) {
-		this.number = number;
-		this.expiryMonth = expiryMonth;
-		this.expiryYear = expiryYear;
-	}
+    fun expiryForDisplay(): String? {
+        if (isExpiryValid()) return null
 
-	public String last4() {
-		return number.substring(number.length() - 4);
-	}
+        var month = expiryMonth.toString()
+        if (month.length == 1) month = "0$month"
+        var year = expiryYear.toString()
+        if (year.length == 4) year = year.substring(2)
 
-	public String expiryForDisplay() {
-		if (isExpiryValid()) {
-			return null;
-		}
+        return "$month/$year"
+    }
 
-		String month = String.valueOf(expiryMonth);
-		if (month.length() == 1) {
-			month = "0" + month;
-		}
-		String year = String.valueOf(expiryYear);
-		if (year.length() == 4) {
-			year = year.substring(2);
-		}
-
-		return month + "/" + year;
-	}
-
-	public boolean isExpiryValid() {
-		return expiryMonth <= 0 || expiryMonth > 12 || expiryYear <= 0;
-	}
+    fun isExpiryValid(): Boolean = expiryMonth !in 1..12 || expiryYear <= 0
 }

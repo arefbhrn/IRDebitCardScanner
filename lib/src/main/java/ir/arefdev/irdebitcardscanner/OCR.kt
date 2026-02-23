@@ -1,153 +1,153 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.app.ActivityManager;
-import android.content.Context;
-import android.content.pm.ConfigurationInfo;
-import android.graphics.Bitmap;
-import android.util.Log;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import android.app.ActivityManager
+import android.content.Context
+import android.content.pm.ConfigurationInfo
+import android.graphics.Bitmap
+import android.util.Log
 
 /**
  * This class is not thread safe, make sure that all methods run on the same thread.
  */
-class OCR {
+internal class OCR {
 
-	private static FindFourModel findFour = null;
-	private static RecognizedDigitsModel recognizedDigitsModel = null;
-	List<DetectedBox> digitBoxes = new ArrayList<>();
-	DetectedBox expiryBox = null;
-	Expiry expiry = null;
-	boolean hadUnrecoverableException = false;
-	private static boolean USE_GPU = false;
+    companion object {
+        private var findFour: FindFourModel? = null
+        private var recognizedDigitsModel: RecognizedDigitsModel? = null
+        private const val USE_GPU = false
 
-	static boolean isInit() {
-		return findFour != null && recognizedDigitsModel != null;
-	}
+        fun isInit(): Boolean = findFour != null && recognizedDigitsModel != null
+    }
 
-	private ArrayList<DetectedBox> detectBoxes(Bitmap image) {
-		ArrayList<DetectedBox> boxes = new ArrayList<>();
-		for (int row = 0; row < findFour.rows; row++) {
-			for (int col = 0; col < findFour.cols; col++) {
-				if (findFour.hasDigits(row, col)) {
-					float confidence = findFour.digitConfidence(row, col);
-					CGSize imageSize = new CGSize(image.getWidth(), image.getHeight());
-					DetectedBox box = new DetectedBox(row, col, confidence, findFour.rows,
-							findFour.cols, findFour.boxSize, findFour.cardSize, imageSize);
-					boxes.add(box);
-				}
-			}
-		}
-		return boxes;
-	}
+    var digitBoxes: List<DetectedBox> = ArrayList()
+    var expiryBox: DetectedBox? = null
+    var expiry: Expiry? = null
+    var hadUnrecoverableException = false
 
-	private ArrayList<DetectedBox> detectExpiry(Bitmap image) {
-		ArrayList<DetectedBox> boxes = new ArrayList<>();
-		for (int row = 0; row < findFour.rows; row++) {
-			for (int col = 0; col < findFour.cols; col++) {
-				if (findFour.hasExpiry(row, col)) {
-					float confidence = findFour.expiryConfidence(row, col);
-					CGSize imageSize = new CGSize(image.getWidth(), image.getHeight());
-					DetectedBox box = new DetectedBox(row, col, confidence, findFour.rows,
-							findFour.cols, findFour.boxSize, findFour.cardSize, imageSize);
-					boxes.add(box);
-				}
-			}
-		}
-		return boxes;
-	}
+    private fun detectBoxes(image: Bitmap): ArrayList<DetectedBox> {
+        val boxes = ArrayList<DetectedBox>()
+        val ff = findFour!!
+        for (row in 0 until ff.rows) {
+            for (col in 0 until ff.cols) {
+                if (ff.hasDigits(row, col)) {
+                    val confidence = ff.digitConfidence(row, col)
+                    val imageSize = CGSize(image.width.toFloat(), image.height.toFloat())
+                    val box = DetectedBox(row, col, confidence, ff.rows, ff.cols, ff.boxSize, ff.cardSize, imageSize)
+                    boxes.add(box)
+                }
+            }
+        }
+        return boxes
+    }
 
-	private String runModel(Bitmap image) {
-		findFour.classifyFrame(image);
-		ArrayList<DetectedBox> boxes = detectBoxes(image);
-		ArrayList<DetectedBox> expiryBoxes = detectExpiry(image);
-		PostDetectionAlgorithm postDetection = new PostDetectionAlgorithm(boxes, findFour);
+    private fun detectExpiry(image: Bitmap): ArrayList<DetectedBox> {
+        val boxes = ArrayList<DetectedBox>()
+        val ff = findFour!!
+        for (row in 0 until ff.rows) {
+            for (col in 0 until ff.cols) {
+                if (ff.hasExpiry(row, col)) {
+                    val confidence = ff.expiryConfidence(row, col)
+                    val imageSize = CGSize(image.width.toFloat(), image.height.toFloat())
+                    val box = DetectedBox(row, col, confidence, ff.rows, ff.cols, ff.boxSize, ff.cardSize, imageSize)
+                    boxes.add(box)
+                }
+            }
+        }
+        return boxes
+    }
 
-		RecognizeNumbers recognizeNumbers = new RecognizeNumbers(image, findFour.rows, findFour.cols);
-		ArrayList<ArrayList<DetectedBox>> lines = postDetection.horizontalNumbers();
-		String number = recognizeNumbers.number(recognizedDigitsModel, lines);
+    private fun runModel(image: Bitmap): String? {
+        val ff = findFour!!
+        val rdm = recognizedDigitsModel!!
+        ff.classifyFrame(image)
+        var boxes = detectBoxes(image)
+        val expiryBoxes = detectExpiry(image)
+        val postDetection = PostDetectionAlgorithm(boxes, ff)
 
-		if (number == null) {
-			ArrayList<ArrayList<DetectedBox>> verticalLines = postDetection.verticalNumbers();
-			number = recognizeNumbers.number(recognizedDigitsModel, verticalLines);
-			lines.addAll(verticalLines);
-		}
+        val recognizeNumbers = RecognizeNumbers(image, ff.rows, ff.cols)
+        val lines = postDetection.horizontalNumbers()
+        var number = recognizeNumbers.number(rdm, lines)
 
-		boxes = new ArrayList<>();
-		for (ArrayList<DetectedBox> numbers : lines) {
-			boxes.addAll(numbers);
-		}
+        if (number == null) {
+            val verticalLines = postDetection.verticalNumbers()
+            number = recognizeNumbers.number(rdm, verticalLines)
+            lines.addAll(verticalLines)
+        }
 
-		this.expiry = null;
-		if (expiryBoxes.size() > 0) {
-			Collections.sort(expiryBoxes);
-			DetectedBox expiryBox = expiryBoxes.get(expiryBoxes.size() - 1);
-			this.expiry = Expiry.from(recognizedDigitsModel, image, expiryBox.getRect());
-			if (this.expiry != null) {
-				this.expiryBox = expiryBox;
-			} else {
-				this.expiryBox = null;
-			}
-		}
+        boxes = ArrayList()
+        for (numbers in lines) {
+            boxes.addAll(numbers)
+        }
 
-		this.digitBoxes = boxes;
+        this.expiry = null
+        if (expiryBoxes.isNotEmpty()) {
+            expiryBoxes.sort()
+            val expiryBox = expiryBoxes[expiryBoxes.size - 1]
+            this.expiry = Expiry.from(rdm, image, expiryBox.getRect())
+            if (this.expiry != null) {
+                this.expiryBox = expiryBox
+            } else {
+                this.expiryBox = null
+            }
+        }
 
-		return number;
-	}
+        this.digitBoxes = boxes
 
-	private boolean hasOpenGl31(Context context) {
-		int openGlVersion = 0x00030001;
-		ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-		ConfigurationInfo configInfo = activityManager.getDeviceConfigurationInfo();
-		if (configInfo.reqGlEsVersion != ConfigurationInfo.GL_ES_VERSION_UNDEFINED) {
-			return configInfo.reqGlEsVersion >= openGlVersion;
-		} else {
-			return false;
-		}
-	}
+        return number
+    }
 
-	synchronized String predict(Bitmap image, Context context) {
-		final int NUM_THREADS = 4;
-		try {
-			boolean createdNewModel = false;
+    private fun hasOpenGl31(context: Context): Boolean {
+        val openGlVersion = 0x00030001
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val configInfo: ConfigurationInfo = activityManager.deviceConfigurationInfo
+        return if (configInfo.reqGlEsVersion != ConfigurationInfo.GL_ES_VERSION_UNDEFINED) {
+            configInfo.reqGlEsVersion >= openGlVersion
+        } else {
+            false
+        }
+    }
 
-			if (findFour == null) {
-				findFour = new FindFourModel(context);
-				findFour.setNumThreads(NUM_THREADS);
-				createdNewModel = true;
-			}
+    @Synchronized
+    fun predict(image: Bitmap, context: Context): String? {
+        val NUM_THREADS = 4
+        try {
+            var createdNewModel = false
 
-			if (recognizedDigitsModel == null) {
-				recognizedDigitsModel = new RecognizedDigitsModel(context);
-				recognizedDigitsModel.setNumThreads(NUM_THREADS);
-				createdNewModel = true;
-			}
+            if (findFour == null) {
+                findFour = FindFourModel(context)
+                findFour!!.setNumThreads(NUM_THREADS)
+                createdNewModel = true
+            }
 
-			if (createdNewModel && hasOpenGl31(context) && USE_GPU) {
-				try {
-					findFour.useGpu();
-					recognizedDigitsModel.useGpu();
-				} catch (Error | Exception e) {
-					Log.i("Ocr", "useGpu exception, falling back to CPU", e);
-					findFour = new FindFourModel(context);
-					recognizedDigitsModel = new RecognizedDigitsModel(context);
-				}
-			}
+            if (recognizedDigitsModel == null) {
+                recognizedDigitsModel = RecognizedDigitsModel(context)
+                recognizedDigitsModel!!.setNumThreads(NUM_THREADS)
+                createdNewModel = true
+            }
 
-			try {
-				return runModel(image);
-			} catch (Error | Exception e) {
-				Log.i("Ocr", "runModel exception, retry prediction", e);
-				findFour = new FindFourModel(context);
-				recognizedDigitsModel = new RecognizedDigitsModel(context);
-				return runModel(image);
-			}
-		} catch (Error | Exception e) {
-			Log.e("Ocr", "unrecoverable exception on Ocr", e);
-			hadUnrecoverableException = true;
-			return null;
-		}
-	}
+            if (createdNewModel && hasOpenGl31(context) && USE_GPU) {
+                try {
+                    findFour!!.useGpu()
+                    recognizedDigitsModel!!.useGpu()
+                } catch (e: Throwable) {
+                    Log.i("Ocr", "useGpu exception, falling back to CPU", e)
+                    findFour = FindFourModel(context)
+                    recognizedDigitsModel = RecognizedDigitsModel(context)
+                }
+            }
+
+            return try {
+                runModel(image)
+            } catch (e: Throwable) {
+                Log.i("Ocr", "runModel exception, retry prediction", e)
+                findFour = FindFourModel(context)
+                recognizedDigitsModel = RecognizedDigitsModel(context)
+                runModel(image)
+            }
+        } catch (e: Throwable) {
+            Log.e("Ocr", "unrecoverable exception on Ocr", e)
+            hadUnrecoverableException = true
+            return null
+        }
+    }
 }

@@ -1,12 +1,10 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.graphics.Bitmap;
+import android.graphics.Bitmap
 
 interface OnObjectListener {
 
-	void onPrediction(final Bitmap bitmap, int imageWidth,
-					  int imageHeight);
+    fun onPrediction(bitmap: Bitmap, imageWidth: Int, imageHeight: Int)
 
-	void onObjectFatalError();
-
+    fun onObjectFatalError()
 }

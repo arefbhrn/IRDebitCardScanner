@@ -1,34 +1,29 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import androidx.annotation.NonNull;
+class DetectedBox(
+    val row: Int,
+    val col: Int,
+    private val confidence: Float,
+    numRows: Int,
+    numCols: Int,
+    boxSize: CGSize,
+    cardSize: CGSize,
+    imageSize: CGSize
+) : Comparable<DetectedBox> {
 
-class DetectedBox implements Comparable {
+    private val rect: CGRect
 
-	private CGRect rect;
-	final int row;
-	final int col;
-	private float confidence;
+    init {
+        // Resize the box to transform it from the model's coordinates into
+        // the image's coordinates
+        val w = boxSize.width * imageSize.width / cardSize.width
+        val h = boxSize.height * imageSize.height / cardSize.height
+        val x = (imageSize.width - w) / (numCols - 1).toFloat() * col.toFloat()
+        val y = (imageSize.height - h) / (numRows - 1).toFloat() * row.toFloat()
+        rect = CGRect(x, y, w, h)
+    }
 
-	DetectedBox(int row, int col, float confidence, int numRows, int numCols,
-				CGSize boxSize, CGSize cardSize, CGSize imageSize) {
-		// Resize the box to transform it from the model's coordinates into
-		// the image's coordinates
-		float w = boxSize.width * imageSize.width / cardSize.width;
-		float h = boxSize.height * imageSize.height / cardSize.height;
-		float x = (imageSize.width - w) / ((float) (numCols - 1)) * ((float) col);
-		float y = (imageSize.height - h) / ((float) (numRows - 1)) * ((float) row);
-		this.rect = new CGRect(x, y, w, h);
-		this.row = row;
-		this.col = col;
-		this.confidence = confidence;
-	}
+    override fun compareTo(other: DetectedBox): Int = confidence.compareTo(other.confidence)
 
-	@Override
-	public int compareTo(@NonNull Object o) {
-		return Float.compare(this.confidence, ((DetectedBox) o).confidence);
-	}
-
-	public CGRect getRect() {
-		return rect;
-	}
+    fun getRect(): CGRect = rect
 }

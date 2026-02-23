@@ -1,13 +1,10 @@
-package ir.arefdev.irdebitcardscanner;
+package ir.arefdev.irdebitcardscanner
 
-import android.content.Context;
-import android.util.AttributeSet;
+import android.content.Context
+import android.util.AttributeSet
 
-public class OverlayNoCorners extends Overlay {
-
-	public OverlayNoCorners(Context context, AttributeSet attrs) {
-		super(context, attrs);
-		this.drawCorners = false;
-	}
-
+class OverlayNoCorners(context: Context, attrs: AttributeSet) : Overlay(context, attrs) {
+    init {
+        drawCorners = false
+    }
 }
