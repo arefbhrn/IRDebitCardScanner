@@ -1,6 +1,7 @@
 package ir.arefdev.irdebitcardscanner;
 
 import java.util.HashMap;
+import java.util.Map;
 
 class DebitCardUtils {
 
@@ -41,10 +42,13 @@ class DebitCardUtils {
 	private static final String BANK_SLUG_KOSAR = "io_kosar";
 	private static final String BANK_SLUG_SAMEN = "io_samen";
 
-	private static HashMap<String, String> CARD_NUMBER_STARTER = new HashMap<>();
+	private static final Map<String, String> CARD_NUMBER_STARTER = new HashMap<>();
+	private static final Map<String, String> MANUAL_CARD_NUMBER_STARTER = new HashMap<>();
+	private static boolean initialized = false;
 
 	private static void init() {
-		if (CARD_NUMBER_STARTER.isEmpty()) {
+		if (!initialized) {
+			initialized = true;
 			CARD_NUMBER_STARTER.put("627381", BANK_SLUG_ANSAR);
 			CARD_NUMBER_STARTER.put("636214", BANK_SLUG_AYANDE);
 			CARD_NUMBER_STARTER.put("502938", BANK_SLUG_DEY);
@@ -58,7 +62,7 @@ class DebitCardUtils {
 			CARD_NUMBER_STARTER.put("502910", BANK_SLUG_KARAFARIN);
 			CARD_NUMBER_STARTER.put("603770", BANK_SLUG_KESHAVARZI);
 			CARD_NUMBER_STARTER.put("639217", BANK_SLUG_KESHAVARZI);
-//			CARD_NUMBER_STARTER.put("", BANK_SLUG_KHAVARMIANE);
+			CARD_NUMBER_STARTER.put("585947", BANK_SLUG_KHAVARMIANE);
 			CARD_NUMBER_STARTER.put("628023", BANK_SLUG_MASKAN);
 			CARD_NUMBER_STARTER.put("639370", BANK_SLUG_MEHR_EGHTESAD);
 			CARD_NUMBER_STARTER.put("606373", BANK_SLUG_MEHR_IRAN);
@@ -93,6 +97,11 @@ class DebitCardUtils {
 		}
 	}
 
+	public static void addCardNumberStarters(Map<String, String> starters) {
+		init();
+		MANUAL_CARD_NUMBER_STARTER.putAll(starters);
+	}
+
 	public static String getBankSlugFromCardNumber(String cardNumber) {
 		init();
 
@@ -101,6 +110,9 @@ class DebitCardUtils {
 
 		if (CARD_NUMBER_STARTER.containsKey(cardNumber.substring(0, 6)))
 			return CARD_NUMBER_STARTER.get(cardNumber.substring(0, 6));
+
+		if (MANUAL_CARD_NUMBER_STARTER.containsKey(cardNumber.substring(0, 6)))
+			return MANUAL_CARD_NUMBER_STARTER.get(cardNumber.substring(0, 6));
 
 		return null;
 	}

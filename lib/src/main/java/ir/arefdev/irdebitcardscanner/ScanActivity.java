@@ -6,6 +6,8 @@ import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 
+import java.util.Map;
+
 /**
  * The ScanActivity class provides the main interface to the scanning functionality. To use this
  * activity, call the {@link ScanActivity#start(Activity)} method and override
@@ -84,6 +86,17 @@ public class ScanActivity {
 	 */
 	public static boolean isScanResult(int requestCode) {
 		return requestCode == REQUEST_CODE;
+	}
+
+	/**
+	 * Adds custom card number prefix-to-bank-slug mappings, merged on top of the built-in ones.
+	 * Call this before starting a scan. Existing built-in entries are preserved; entries with
+	 * the same prefix are overridden by the provided map.
+	 *
+	 * @param starters a map of 6-digit card number prefixes to bank slug strings
+	 */
+	public static void addCardNumberStarters(@NonNull Map<String, String> starters) {
+		DebitCardUtils.addCardNumberStarters(starters);
 	}
 
 	public static DebitCard debitCardFromResult(Intent intent) {
