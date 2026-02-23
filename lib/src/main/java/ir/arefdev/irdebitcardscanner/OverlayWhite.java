@@ -3,6 +3,8 @@ package ir.arefdev.irdebitcardscanner;
 import android.content.Context;
 import android.util.AttributeSet;
 
+import com.arefbhrn.irdebitcardscanner.R;
+
 public class OverlayWhite extends Overlay {
 
 	int backgroundColorId = R.color.irdcs_white_background;

@@ -6,6 +6,8 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.arefdev.irdebitcardscanner.example.R;
+
 import ir.arefdev.irdebitcardscanner.DebitCard;
 
 public class ResultActivity extends AppCompatActivity {

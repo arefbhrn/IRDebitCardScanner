@@ -11,6 +11,8 @@ import android.graphics.Xfermode;
 import android.util.AttributeSet;
 import android.view.View;
 
+import com.arefbhrn.irdebitcardscanner.R;
+
 // adapted from this: https://medium.com/@rgomez/android-how-to-draw-an-overlay-with-a-transparent-hole-471af6cf3953
 public class Overlay extends View {
 

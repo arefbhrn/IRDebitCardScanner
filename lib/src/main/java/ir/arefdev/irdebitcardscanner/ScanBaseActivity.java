@@ -25,6 +25,8 @@ import android.widget.TextView;
 import androidx.annotation.Nullable;
 import androidx.annotation.VisibleForTesting;
 
+import com.arefbhrn.irdebitcardscanner.R;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;

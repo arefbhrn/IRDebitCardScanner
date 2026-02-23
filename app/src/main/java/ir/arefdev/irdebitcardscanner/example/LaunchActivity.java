@@ -8,6 +8,8 @@ import android.view.View;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.arefdev.irdebitcardscanner.example.R;
+
 import ir.arefdev.irdebitcardscanner.DebitCard;
 import ir.arefdev.irdebitcardscanner.ScanActivity;
 

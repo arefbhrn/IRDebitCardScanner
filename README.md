@@ -71,9 +71,3 @@ License
 ---------------------------
 
 This project is licensed under the GNU/GPL 3.0 License - see the [LICENSE.md](LICENSE.md) file for details
-
----
-
-##### References
-
-Based on [this](https://github.com/getbouncer/cardscan-android) project!

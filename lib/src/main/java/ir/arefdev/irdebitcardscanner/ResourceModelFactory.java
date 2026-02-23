@@ -3,6 +3,8 @@ package ir.arefdev.irdebitcardscanner;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 
+import com.arefbhrn.irdebitcardscanner.R;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.MappedByteBuffer;

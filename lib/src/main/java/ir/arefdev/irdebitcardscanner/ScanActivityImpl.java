@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.arefbhrn.irdebitcardscanner.R;
+
 import java.util.List;
 
 public class ScanActivityImpl extends ScanBaseActivity {

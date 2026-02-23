@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="ir.arefdev.irdebitcardscanner">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -10,7 +9,7 @@
 
     <application>
         <activity
-            android:name=".ScanActivityImpl"
+            android:name="ir.arefdev.irdebitcardscanner.ScanActivityImpl"
             android:configChanges="orientation"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.NoActionBar.FullScreen" />

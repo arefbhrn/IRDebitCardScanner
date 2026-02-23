@@ -2,11 +2,11 @@ apply plugin: 'com.android.application'
 apply plugin: 'org.jetbrains.kotlin.android'
 
 android {
-    namespace = "dev.aref.irdebitcardscanner.example"
+    namespace = "com.arefdev.irdebitcardscanner.example"
     compileSdkVersion 36
     defaultConfig {
-        applicationId "dev.aref.irdebitcardscanner.example"
-        minSdkVersion 19
+        applicationId "com.arefdev.irdebitcardscanner.example"
+        minSdkVersion 21
         targetSdk 36
         versionCode 3
         versionName "1.0.2"
