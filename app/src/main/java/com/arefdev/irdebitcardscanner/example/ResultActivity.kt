@@ -1,10 +1,9 @@
-package ir.arefdev.irdebitcardscanner.example
+package com.arefdev.irdebitcardscanner.example
 
 import android.os.Bundle
 import android.text.TextUtils
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.arefdev.irdebitcardscanner.example.R
 import ir.arefdev.irdebitcardscanner.DebitCard
 
 class ResultActivity : AppCompatActivity() {
