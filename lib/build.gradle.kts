@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -61,7 +59,7 @@ publishing {
             description = "Iranian Debit Card Scanner using Deep Learning and TensorFlow Lite for Android"
             groupId = "com.arefbhrn.libraries"
             artifactId = "IRDebitCardScanner"
-            version = "1.0.2"
+            version = "1.1.0"
 
             pom {
                 name.set("IRDebitCardScanner")
