@@ -121,6 +121,30 @@ class DebitCardUtils {
 		return luhnCheck(cardNumber);
 	}
 
+	// Iranian IBAN: IR + 2 check digits + 22-digit BBAN = 26 chars
+	// Rearrange for MOD-97: BBAN + "1827" (I=18, R=27) + check_digits
+	// Valid if rearranged_number mod 97 == 1
+	public static boolean isIbanValid(String iban) {
+		if (iban == null) return false;
+
+		iban = iban.replace(" ", "").toUpperCase();
+
+		if (iban.length() != 26 || !iban.startsWith("IR")) return false;
+
+		for (int i = 2; i < iban.length(); i++) {
+			if (!Character.isDigit(iban.charAt(i))) return false;
+		}
+
+		// rearranged = iban[4..25] + "1827" + iban[2..3]
+		String rearranged = iban.substring(4) + "1827" + iban.substring(2, 4);
+
+		int mod = 0;
+		for (int i = 0; i < rearranged.length(); i++) {
+			mod = (mod * 10 + (rearranged.charAt(i) - '0')) % 97;
+		}
+		return mod == 1;
+	}
+
 	// https://en.wikipedia.org/wiki/Luhn_algorithm#Java
 	static boolean luhnCheck(String ccNumber) {
 		if (ccNumber == null || ccNumber.length() != 16 || getBankSlugFromCardNumber(ccNumber) == null) {

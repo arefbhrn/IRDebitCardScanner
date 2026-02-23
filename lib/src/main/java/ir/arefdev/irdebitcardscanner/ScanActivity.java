@@ -99,6 +99,17 @@ public class ScanActivity {
 		DebitCardUtils.addCardNumberStarters(starters);
 	}
 
+	/**
+	 * Validates an Iranian IBAN (26 characters: IR + 2 check digits + 22-digit BBAN).
+	 * Spaces are stripped and the string is case-insensitive before validation.
+	 *
+	 * @param iban the IBAN string to validate
+	 * @return true if the IBAN is structurally valid
+	 */
+	public static boolean isIbanValid(String iban) {
+		return DebitCardUtils.isIbanValid(iban);
+	}
+
 	public static DebitCard debitCardFromResult(Intent intent) {
 		String number = intent.getStringExtra(ScanActivityImpl.RESULT_CARD_NUMBER);
 		int month = intent.getIntExtra(ScanActivityImpl.RESULT_EXPIRY_MONTH, 0);
